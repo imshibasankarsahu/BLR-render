@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Price Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        .container {
+            max-width: 600px;
+            margin: 2rem auto; /* Centered with some top/bottom margin */
+            padding: 2rem;
+            background-color: #ffffff; /* White card background */
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Soft shadow */
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500; /* Medium font weight */
+            color: #374151; /* Dark gray text */
+        }
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; /* Light gray border */
+            border-radius: 0.375rem; /* Rounded corners for inputs */
+            box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* Subtle inner shadow */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #6366f1; /* Indigo border on focus */
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); /* Indigo focus ring */
+        }
+        .submit-button {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background-color: #4f46e5; /* Indigo button */
+            color: white;
+            font-weight: 600; /* Semibold font weight */
+            border-radius: 0.375rem; /* Rounded corners for button */
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .submit-button:hover {
+            background-color: #4338ca; /* Darker indigo on hover */
+        }
+        .form-group {
+            margin-bottom: 1.5rem; /* Space between form groups */
+        }
+        .message-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .message-box-success {
+            background-color: #d1fae5; /* Green for success */
+            color: #065f46;
+        }
+        .message-box-error {
+            background-color: #fee2e2; /* Red for error */
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">House Price Predictor</h1>
+
+        <form id="pricePredictorForm">
+            <div class="form-group">
+                <label for="total_sqft" class="form-label">Total Square Feet (ಅಡಿಗಳಲ್ಲಿ):</label>
+                <input type="number" id="total_sqft" name="total_sqft" class="form-input" placeholder="e.g., 1200" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bath" class="form-label">Number of Bathrooms (ಸ್ನಾನಗೃಹಗಳು):</label>
+                <input type="number" id="bath" name="bath" class="form-input" placeholder="e.g., 2" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="bhk" class="form-label">Number of BHK (ಕೊಠಡಿಗಳು):</label>
+                <input type="number" id="bhk" name="bhk" class="form-input" placeholder="e.g., 3" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="area" class="form-label">Area (ಪ್ರದೇಶ):</label>
+                <select id="area" name="area" class="form-select" required>
+                    <option value="" disabled selected>Select an Area</option>
+                    </select>
+            </div>
+
+            <button type="submit" class="submit-button">Predict Price (ಬೆಲೆ ಊಹಿಸಿ)</button>
+        </form>
+
+        <div id="predictionResult" class="message-box" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Array of area names
+        const areas = [
+            "1st Block Jayanagar", "1st Phase JP Nagar", "2nd Phase Judicial Layout", "2nd Stage Nagarbhavi",
+            "5th Block HBR Layout", "5th Phase JP Nagar", "6th Phase JP Nagar", "7th Phase JP Nagar",
+            "8th Phase JP Nagar", "9th Phase JP Nagar", "AECS Layout", "Abbigere", "Akshaya Nagar",
+            "Ambalipura", "Ambedkar Nagar", "Amruthahalli", "Anandapura", "Ananth Nagar", "Anekal",
+            "Anjanapura", "Ardendale", "Arekere", "Attibele", "BEML Layout", "BTM 2nd Stage", "BTM Layout",
+            "Babusapalaya", "Badavala Nagar", "Balagere", "Banashankari", "Banashankari Stage II",
+            "Banashankari Stage III", "Banashankari Stage V", "Banashankari Stage VI", "Banaswadi",
+            "Banjara Layout", "Bannerghatta", "Bannerghatta Road", "Basavangudi", "Basaveshwara Nagar",
+            "Battarahalli", "Begur", "Begur Road", "Bellandur", "Benson Town", "Bharathi Nagar",
+            "Bhoganhalli", "Billekahalli", "Binny Pete", "Bisuvanahalli", "Bommanahalli", "Bommasandra",
+            "Bommasandra Industrial Area", "Bommenahalli", "Brookefield", "Budigere", "CV Raman Nagar",
+            "Chamrajpet", "Chandapura", "Channasandra", "Chikka Tirupathi", "Chikkabanavar",
+            "Chikkalasandra", "Choodasandra", "Cooke Town", "Cox Town", "Cunningham Road", "Dasanapura",
+            "Dasarahalli", "Devanahalli", "Devarachikkanahalli", "Dodda Nekkundi", "Doddaballapur",
+            "Doddakallasandra", "Doddathoguru", "Domlur", "Dommasandra", "EPIP Zone", "Electronic City",
+            "Electronic City Phase II", "Electronics City Phase 1", "Frazer Town", "GM Palaya",
+            "Garudachar Palya", "Giri Nagar", "Gollarapalya Hosahalli", "Gottigere", "Green Glen Layout",
+            "Gubbalala", "Gunjur", "HAL 2nd Stage", "HBR Layout", "HRBR Layout", "HSR Layout",
+            "Haralur Road", "Harlur", "Hebbal", "Hebbal Kempapura", "Hegde Nagar", "Hennur", "Hennur Road",
+            "Hoodi", "Horamavu Agara", "Horamavu Banaswadi", "Hormavu", "Hosa Road", "Hosakerehalli",
+            "Hoskote", "Hosur Road", "Hulimavu", "ISRO Layout", "ITPL", "Iblur Village", "Indira Nagar",
+            "JP Nagar", "Jakkur", "Jalahalli", "Jalahalli East", "Jigani", "Judicial Layout", "KR Puram",
+            "Kadubeesanahalli", "Kadugodi", "Kaggadasapura", "Kaggalipura", "Kaikondrahalli",
+            "Kalena Agrahara", "Kalyan Nagar", "Kambipura", "Kammanahalli", "Kammasandra", "Kanakapura",
+            "Kanakpura Road", "Kannamangala", "Karuna Nagar", "Kasavanhalli", "Kasturi Nagar",
+            "Kathriguppe", "Kaval Byrasandra", "Kenchenahalli", "Kengeri", "Kengeri Satellite Town",
+            "Kereguddadahalli", "Kodichikkanahalli", "Kodigehaali", "Kodigehalli", "Kodihalli", "Kogilu",
+            "Konanakunte", "Koramangala", "Kothannur", "Kothanur", "Kudlu", "Kudlu Gate",
+            "Kumaraswami Layout", "Kundalahalli", "LB Shastri Nagar", "Laggere", "Lakshminarayana Pura",
+            "Lingadheeranahalli", "Magadi Road", "Mahadevpura", "Mahalakshmi Layout", "Mallasandra",
+            "Malleshpalya", "Malleshwaram", "Marathahalli", "Margondanahalli", "Marsur", "Mico Layout",
+            "Munnekollal", "Murugeshpalya", "Mysore Road", "NGR Layout", "NRI Layout", "Nagarbhavi",
+            "Nagasandra", "Nagavara", "Nagavarapalya", "Narayanapura", "Neeladri Nagar", "Nehru Nagar",
+            "OMBR Layout", "Old Airport Road", "Old Madras Road", "Padmanabhanagar", "Pai Layout",
+            "Panathur", "Parappana Agrahara", "Pattandur Agrahara", "Poorna Pragna Layout",
+            "Prithvi Layout", "R.T. Nagar", "Rachenahalli", "Raja Rajeshwari Nagar", "Rajaji Nagar",
+            "Rajiv Nagar", "Ramagondanahalli", "Ramamurthy Nagar", "Rayasandra", "Sahakara Nagar",
+            "Sanjay Nagar", "Sarakki Nagar", "Sarjapur", "Sarjapur Road", "Sarjapura - Attibele Road",
+            "Sector 2 HSR Layout", "Sector 7 HSR Layout", "Seegehalli", "Shampura", "Shivaji Nagar",
+            "Singasandra", "Somasundara Palya", "Sompura", "Sonnenahalli", "Subramanyapura",
+            "Sultan Palaya", "TC Palaya", "Talaghattapura", "Thanisandra", "Thigalarapalya", "Thubarahalli",
+            "Thyagaraja Nagar", "Tindlu", "Tumkur Road", "Ulsoor", "Uttarahalli", "Varthur", "Varthur Road",
+            "Vasanthapura", "Vidyaranyapura", "Vijayanagar", "Vishveshwarya Layout", "Vishwapriya Layout",
+            "Vittasandra", "Whitefield", "Yelachenahalli", "Yelahanka", "Yelahanka New Town",
+            "Yelenahalli", "Yeshwanthpur"
+        ];
+
+        // Get the select element
+        const areaDropdown = document.getElementById('area');
+
+        // Populate the dropdown with area options
+        areas.forEach(areaName => {
+            const option = document.createElement('option');
+            option.value = areaName.toLowerCase().replace(/ /g, '_'); // Create a value (e.g., 1st_block_jayanagar)
+            option.textContent = areaName;
+            areaDropdown.appendChild(option);
+        });
+
+        // Handle form submission
+        const form = document.getElementById('pricePredictorForm');
+        const predictionResultDiv = document.getElementById('predictionResult');
+
+        form.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent actual form submission
+
+            // Get form data
+            const totalSqft = document.getElementById('total_sqft').value;
+            const bath = document.getElementById('bath').value;
+            const bhk = document.getElementById('bhk').value;
+            const selectedArea = document.getElementById('area').value;
+            const selectedAreaText = areaDropdown.options[areaDropdown.selectedIndex].text;
+
+
+            // Basic validation (ensure all fields are filled)
+            if (!totalSqft || !bath || !bhk || !selectedArea) {
+                predictionResultDiv.textContent = 'Please fill in all fields. (ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಭರ್ತಿ ಮಾಡಿ.)';
+                predictionResultDiv.className = 'message-box message-box-error'; // Reset classes and add error class
+                predictionResultDiv.style.display = 'block';
+                return;
+            }
+
+            // --- Placeholder for actual prediction logic ---
+            // In a real application, you would send this data to a server/API
+            // that hosts your machine learning model for prediction.
+            // For this example, we'll just display a mock prediction.
+
+            console.log('Form Data:', { totalSqft, bath, bhk, area: selectedAreaText });
+
+            // Simulate a prediction (replace with actual API call)
+            const mockPrice = (parseFloat(totalSqft) * 5000 + parseInt(bath) * 100000 + parseInt(bhk) * 200000).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 0
+            });
+
+
+            predictionResultDiv.textContent = `Estimated Price for a ${bhk} BHK in ${selectedAreaText} (${totalSqft} sqft, ${bath} bath(s)): ${mockPrice} (ಅಂದಾಜು ಬೆಲೆ)`;
+            predictionResultDiv.className = 'message-box message-box-success'; // Reset classes and add success class
+            predictionResultDiv.style.display = 'block';
+
+            // You could add a setTimeout to hide the message after a few seconds
+            // setTimeout(() => {
+            //     predictionResultDiv.style.display = 'none';
+            // }, 5000);
+        });
+    </script>
+</body>
+</html>
